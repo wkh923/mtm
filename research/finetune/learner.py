@@ -122,10 +122,10 @@ class Learner(object):
                     cem_logits = torch.log((score[:, None, None, None] * encode_top_k_actions).sum(dim=0)) #(traj_length-seg_idx+1, action_dim, num_bins)
                     cem_dist = D.categorical.Categorical(logits=cem_logits)
             
-            # print("P:", policy_pred[0], "C:", cem_logits[0])
+            print("P:", policy_pred[0], "C:", cem_logits[0])
             action_sample = action_values[cem_dist.sample()[0]]
             action_expert = action_values[torch.max(policy_pred, dim=-1)[1][0]]
-            # print(torch.abs(action_sample-action_expert))
+            print(torch.abs(action_sample-action_expert))
             
             
         return action_sample, action_expert
@@ -374,7 +374,7 @@ class Learner(object):
             timestep = 0
             while not done and timestep < 1000:
                 current_trajectory["observations"][timestep] = observation
-                _, action = self.action_sample(current_trajectory, percentage=1.0, p=[0,0,0,0,0,0,0,1], cem=False)
+                _, action = self.action_sample(current_trajectory, percentage=1.0, p=[0,0,0,0,0,0,0,1], cem=True)
                 action = np.clip(action.cpu().numpy(), -1, 1)
                 new_observation, reward, done, info = self.env.step(action)
                 current_trajectory["actions"][timestep] = action

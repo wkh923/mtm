@@ -268,13 +268,13 @@ class MTM(nn.Module):
         
         for key, shape in data_shapes.items():
             
-            if discrete_map[key]:
+            if key == "actions":
                 self.output_head_dict[key] = nn.Sequential(
                 nn.LayerNorm(self.n_embd),
                 nn.Linear(self.n_embd, self.n_embd),
                 nn.GELU(),
-                nn.Linear(self.n_embd, shape[-1]),
-                nn.LogSoftmax(dim=-1)
+                nn.Linear(self.n_embd, shape[-1] * 2),
+                
             )
             else:
                 self.output_head_dict[key] = nn.Sequential(
@@ -317,6 +317,15 @@ class MTM(nn.Module):
                 raw_loss = nn.CrossEntropyLoss(reduction="none")(
                     pred.permute(0, 3, 1, 2), target.permute(0, 3, 1, 2)
                 ).unsqueeze(3)
+            
+            elif key == "actions":
+                """stochastic action loss"""
+                action_dim = target.shape[-1]
+                mean, log_std = pred[..., :action_dim], pred[..., action_dim:]
+                var = torch.exp(log_std) ** 2
+                gaussian_loss = ((mean - target) ** 2) / (2 * var) + log_std
+                raw_loss = gaussian_loss.unsqueeze(-1) 
+                
             else:
                 # apply normalization
                 if norm == "l2":
@@ -326,7 +335,7 @@ class MTM(nn.Module):
                     var = target.var(dim=-1, keepdim=True)
                     target_s = (target - mean) / (var + 1.0e-6) ** 0.5
                 
-                raw_loss = nn.MSELoss(reduction="none")(pred, target) / 4
+                raw_loss = nn.MSELoss(reduction="none")(pred, target)
 
             # raw_loss shape = [batch_size, T, P, 1]
 
