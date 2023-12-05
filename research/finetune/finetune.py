@@ -343,6 +343,11 @@ def main(hydra_cfg):
             except Exception as e:
                 logger.error(f"Failed to remove model file! {e}")
             
+        if step == 5000:
+            with open('returns.txt', 'w') as file:
+                for item in buffer.new_return_list:
+                    file.write(str(item) + '\n')
+                
         if step % cfg.eval_every == 0:
             start_time = time.time()
             learner.mtm.eval()

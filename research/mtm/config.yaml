@@ -9,7 +9,7 @@ model_config:
     norm: "none"
     n_embd: 512
     n_enc_layer: 2
-    n_dec_layer: 1
+    n_dec_layer: 2
     n_head: 4
     dropout: 0.1
     loss_keys: null
@@ -42,7 +42,7 @@ args:
     num_train_steps: 140010
     learning_rate: 0.0001
     weight_decay:  0.005
-    mode_weights: [0.1, 0.1, 0.5, 0.3]
+    mode_weights: [0.1, 0.2, 0.6, 0.1]
     tsp_ratio: 1
 
 

@@ -129,7 +129,10 @@ class ReplayBuffer:
         self.rewards_segmented = self.rewards_segmented[keep_idx]
         self.values_segmented = self.values_segmented[keep_idx]
         self.trajectory_returns = self.trajectory_returns[keep_idx]
+        print("avg_return:", np.mean(self.trajectory_returns))
         self.p = self.trajectory_returns / self.trajectory_returns.sum(axis=0)
+        
+        self.new_return_list = []
         
     def online_rollout(self,
                        model: MTM,
@@ -159,7 +162,7 @@ class ReplayBuffer:
             timestep = 0
             while not done and timestep < self.max_path_length:
                 current_trajectory["observations"][timestep] = observation
-                action, _ = sample_func(current_trajectory, percentage=0.8)
+                action, _ = sample_func(current_trajectory, percentage=0.8, cem=False)
                 action = np.clip(action.cpu().numpy(), clip_min, clip_max)
                 new_observation, reward, done, _ = self.env.step(action)
                 current_trajectory["actions"][timestep] = action
@@ -180,6 +183,7 @@ class ReplayBuffer:
             
             current_trajectory["total_return"] = current_trajectory["rewards"].sum()
             
+            self.new_return_list.append(current_trajectory["total_return"])
             if current_trajectory["path_length"] >= self.path_lengths_avg:
                 new_trajectories.append(current_trajectory)
         
