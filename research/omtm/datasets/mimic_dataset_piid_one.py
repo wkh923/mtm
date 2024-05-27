@@ -303,13 +303,13 @@ def sample_action_inv(
 
     # if zero_shot:
     observations[i + 4] = observation
-    observations[i + 4, 7 : 7 + 2] = [0.01943865, -0.19948834]
+    observations[i + 4, 7 : 7 + 2] = [0.04943865, -0.49948834]
     # x_bias = 0.3  # 0.3
     # y_bias = -0.2  # -0.2
     # z_bias = -0.5
     x_bias = 0.3  # 0.3
-    y_bias = 0.2  # -0.2
-    z_bias = 0.5
+    y_bias = -0.2  # -0.2
+    z_bias = -0.5
     observations[i + 4, 0] += x_bias
     observations[i + 4, 1] += y_bias
     observations[i + 4, 2] += z_bias

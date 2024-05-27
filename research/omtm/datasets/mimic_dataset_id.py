@@ -254,7 +254,7 @@ def sample_action_inv(
     i = -1
     max_len = min(traj_len - 1, len(traj))
     if len(traj) >= traj_len - 1:
-        max_len = 2
+        max_len = 4
     assert max_len < traj_len
     for i in range(max_len):
         observations[i] = traj.observations[-max_len + i]
@@ -268,55 +268,19 @@ def sample_action_inv(
     obs_mask = np.copy(masks)
     obs_mask[i + 1] = 1
 
-    if not zero_shot:
-        # pass through tokenizer
-        trajectories = {
-            "states": observations,
-            "actions": actions,
-            "returns": returns,
-        }
-
-        reward_mask = np.ones(traj_len)
-        masks = {
-            "states": obs_mask,
-            "actions": masks,
-            "returns": reward_mask,
-        }
-
-        # convert to tensors and add
-        torch_trajectories = {
-            k: torch.tensor(v, device=device)[None] for k, v in trajectories.items()
-        }
-        torch_masks = {k: torch.tensor(v, device=device) for k, v in masks.items()}
-
-        encoded_trajectories = tokenizer_manager.encode(torch_trajectories)
-
-        predicted = model(encoded_trajectories, torch_masks)
-        decode = tokenizer_manager.decode(predicted)
-
-        # extract_action
-        a = decode["actions"].mean[0][i + 1][0].cpu().numpy()
-        print("action", a)
-        # if zero_shot:
-        #     a[-1] = -0.5
-        return a
-
-    # if zero_shot:
-    observations[i + 4] = observation
-    observations[i + 4, 7 : 7 + 2] = [0.01943865, -0.19948834]
-    # x_bias = 0.3  # 0.3
-    # y_bias = -0.2  # -0.2
-    # z_bias = -0.5
-    x_bias = 0.3  # 0.3
-    y_bias = 0.2  # -0.2
-    z_bias = 0.5
-    observations[i + 4, 0] += x_bias
-    observations[i + 4, 1] += y_bias
-    observations[i + 4, 2] += z_bias
-    observations[i + 4, 9] += x_bias
-    observations[i + 4, 10] += y_bias
-    observations[i + 4, 11] += z_bias
-    obs_mask[i + 4] = 1
+    if zero_shot:
+        observations[i + 2] = observation
+        observations[i + 2, 7 : 7 + 2] = [0.04943865, -0.04948834]
+        x_bias = 0.3  # 0.3
+        y_bias = -0.2  # -0.2
+        z_bias = -0.5
+        observations[i + 2 : i + 3, 0] += x_bias
+        observations[i + 2 : i + 3, 1] += y_bias
+        observations[i + 2 : i + 3, 2] += z_bias
+        observations[i + 2 : i + 3, 9] += x_bias
+        observations[i + 2 : i + 3, 10] += y_bias
+        observations[i + 2 : i + 3, 11] += z_bias
+        obs_mask[i + 2] = 1
 
     # pass through tokenizer
     trajectories = {
@@ -326,7 +290,7 @@ def sample_action_inv(
     }
 
     reward_mask = np.ones(traj_len)
-    masks_dict = {
+    masks = {
         "states": obs_mask,
         "actions": masks,
         "returns": reward_mask,
@@ -336,40 +300,7 @@ def sample_action_inv(
     torch_trajectories = {
         k: torch.tensor(v, device=device)[None] for k, v in trajectories.items()
     }
-    torch_masks = {k: torch.tensor(v, device=device) for k, v in masks_dict.items()}
-
-    encoded_trajectories = tokenizer_manager.encode(torch_trajectories)
-
-    predicted = model(encoded_trajectories, torch_masks)
-    decode = tokenizer_manager.decode(predicted)
-
-    # 2nd round
-    state_from_pi = decode["states"][0].cpu().numpy()
-    # print("state_from_pi", state_from_pi)
-
-    observations[i + 2 : i + 4] = state_from_pi[i + 2 : i + 4]
-    obs_mask[i + 2] = 1
-    obs_mask[i + 3] = 1
-
-    # pass through tokenizer
-    trajectories = {
-        "states": observations,
-        "actions": actions,
-        "returns": returns,
-    }
-
-    reward_mask = np.ones(traj_len)
-    masks_dict = {
-        "states": obs_mask,
-        "actions": masks,
-        "returns": reward_mask,
-    }
-
-    # convert to tensors and add
-    torch_trajectories = {
-        k: torch.tensor(v, device=device)[None] for k, v in trajectories.items()
-    }
-    torch_masks = {k: torch.tensor(v, device=device) for k, v in masks_dict.items()}
+    torch_masks = {k: torch.tensor(v, device=device) for k, v in masks.items()}
 
     encoded_trajectories = tokenizer_manager.encode(torch_trajectories)
 
@@ -856,7 +787,7 @@ def evaluate(
         while not done and eval_steps < max_steps:
             eval_steps += 1
             # print("eval_steps", eval_steps)
-            action = sample_actions(observation, trajectory_history, (eval_steps > 70))
+            action = sample_actions(observation, trajectory_history, (eval_steps > 80))
             # action = sample_actions(observation, trajectory_history)
             action = np.clip(action, -1, 1)
             new_observation, reward, done, info = env.step(action)

@@ -366,6 +366,10 @@ class SequenceDataset:
             "returns": self.values_segmented,
         }
 
+        print(
+            "shape of observations when [statistic]", self.observations_segmented.shape
+        )
+
         # average over samples and time
         ret_dict = {
             k: DataStatistics(

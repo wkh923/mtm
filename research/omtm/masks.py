@@ -62,6 +62,9 @@ def create_random_mask(
 
     # same mask for now
     random_mask = torch.tensor(random_mask, device=device)
+    # if there is no one in the whole mask, then add one
+    if random_mask.eq(1).all():
+        random_mask[-1] = 0
     return random_mask
 
 
@@ -292,9 +295,9 @@ def create_random_autoregressize_mask(
                 masks[k][random_position:, :] = 0
             else:
                 masks[k][random_position + 1 :, :] = 0
-    #Assert one mask action here
+    # Assert one mask action here
     if masks["actions"].eq(1).all():
-        masks['actions'][-1] = 0
+        masks["actions"][-1] = 0
 
     # print(random_mode, random_position)
     return masks

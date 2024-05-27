@@ -34,7 +34,9 @@ class ContinuousTokenizer(Tokenizer):
     ) -> "ContinuousTokenizer":
         # TODO: do not normalize action
         data = []
+        print(f"Creating continuous tokenizer for {key}")
         stats = train_dataset.trajectory_statistics()[key]
+        print("mean_shape", stats.mean.shape)
         data_mean = stats.mean
         data_std = stats.std
         data_std[data_std < 0.1] = 1  # do not normalize if std is too small
