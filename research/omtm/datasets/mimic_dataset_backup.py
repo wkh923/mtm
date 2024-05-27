@@ -717,57 +717,28 @@ class MIMICDataset(seq_d.SequenceDataset):
         action_shape = self.actions_raw.shape
         device = next(model.parameters()).device
 
-        bc_sampler = lambda o, t: sample_action_bc(
-            o, t, model, tokenizer_manager, observation_shape, action_shape, device
-        )
-        results, videos = evaluate(
-            bc_sampler,
-            self.env,
-            10,  # TODO: for test 1
-            (self.observation_dim,),
-            (self.action_dim,),
-            num_videos=0,
-            max_steps=self.max_eval_steps,
-        )
-        for k, v in results.items():
-            log_data[f"eval_bc/{k}"] = v
-        for idx, v in enumerate(videos):
-            log_data[f"eval_bc_video_{idx}/video"] = wandb.Video(
-                v.transpose(0, 3, 1, 2), fps=10, format="gif"
-            )
-
-        # if "returns" in tokenizer_manager.tokenizers:
-        #     for p in [1.0]:
-        #         bc_sampler = lambda o, t, z: sample_action_inv(
-        #             o,
-        #             t,
-        #             model,
-        #             tokenizer_manager,
-        #             observation_shape,
-        #             action_shape,
-        #             device,
-        #             percentage=p,
-        #             zero_shot=z,
-        #         )
-        #         results, videos = evaluate(
-        #             bc_sampler,
-        #             self.env,
-        #             10,
-        #             (self.observation_dim,),
-        #             (self.action_dim,),
-        #             num_videos=0,
-        #             max_steps=self.max_eval_steps,
-        #         )
-        #         for k, v in results.items():
-        #             log_data[f"eval2/p={p}_{k}"] = v
-        #         for idx, v in enumerate(videos):
-        #             log_data[f"eval2_video_{idx}/p={p}_video"] = wandb.Video(
-        #                 v.transpose(0, 3, 1, 2), fps=10, format="gif"
-        #             )
+        # bc_sampler = lambda o, t: sample_action_bc(
+        #     o, t, model, tokenizer_manager, observation_shape, action_shape, device
+        # )
+        # results, videos = evaluate(
+        #     bc_sampler,
+        #     self.env,
+        #     10,  # TODO: for test 1
+        #     (self.observation_dim,),
+        #     (self.action_dim,),
+        #     num_videos=0,
+        #     max_steps=self.max_eval_steps,
+        # )
+        # for k, v in results.items():
+        #     log_data[f"eval_bc/{k}"] = v
+        # for idx, v in enumerate(videos):
+        #     log_data[f"eval_bc_video_{idx}/video"] = wandb.Video(
+        #         v.transpose(0, 3, 1, 2), fps=10, format="gif"
+        #     )
 
         if "returns" in tokenizer_manager.tokenizers:
             for p in [1.0]:
-                bc_sampler = lambda o, t: sample_action_bc2(
+                bc_sampler = lambda o, t, z: sample_action_inv(
                     o,
                     t,
                     model,
@@ -776,6 +747,7 @@ class MIMICDataset(seq_d.SequenceDataset):
                     action_shape,
                     device,
                     percentage=p,
+                    zero_shot=z,
                 )
                 results, videos = evaluate(
                     bc_sampler,
@@ -792,6 +764,34 @@ class MIMICDataset(seq_d.SequenceDataset):
                     log_data[f"eval2_video_{idx}/p={p}_video"] = wandb.Video(
                         v.transpose(0, 3, 1, 2), fps=10, format="gif"
                     )
+
+        # if "returns" in tokenizer_manager.tokenizers:
+        #     for p in [1.0]:
+        #         bc_sampler = lambda o, t: sample_action_bc2(
+        #             o,
+        #             t,
+        #             model,
+        #             tokenizer_manager,
+        #             observation_shape,
+        #             action_shape,
+        #             device,
+        #             percentage=p,
+        #         )
+        #         results, videos = evaluate(
+        #             bc_sampler,
+        #             self.env,
+        #             10,
+        #             (self.observation_dim,),
+        #             (self.action_dim,),
+        #             num_videos=0,
+        #             max_steps=self.max_eval_steps,
+        #         )
+        #         for k, v in results.items():
+        #             log_data[f"eval2/p={p}_{k}"] = v
+        #         for idx, v in enumerate(videos):
+        #             log_data[f"eval2_video_{idx}/p={p}_video"] = wandb.Video(
+        #                 v.transpose(0, 3, 1, 2), fps=10, format="gif"
+        #             )
 
         # if "returns" in tokenizer_manager.tokenizers:
         #     for p in [0.6, 0.7, 0.8, 0.9, 1.0, 1.1]:
@@ -856,8 +856,8 @@ def evaluate(
         while not done and eval_steps < max_steps:
             eval_steps += 1
             # print("eval_steps", eval_steps)
-            # action = sample_actions(observation, trajectory_history, (eval_steps > 70))
-            action = sample_actions(observation, trajectory_history)
+            action = sample_actions(observation, trajectory_history, (eval_steps > 70))
+            # action = sample_actions(observation, trajectory_history)
             action = np.clip(action, -1, 1)
             new_observation, reward, done, info = env.step(action)
             # print("observation", new_observation[0:3])
@@ -865,7 +865,7 @@ def evaluate(
             if reward > 0.0:
                 done = True
             # print("reward", reward)
-            # env.render()
+            env.render()
             trajectory_history = trajectory_history.append(observation, action, reward)
             observation = new_observation
             if len(videos) < num_videos:
